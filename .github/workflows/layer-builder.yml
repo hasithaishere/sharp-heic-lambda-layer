@@ -8,24 +8,47 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  create_release:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    container:
-      image: public.ecr.aws/sam/build-nodejs20.x:1
-      
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-    - uses: actions/checkout@v4
-        
-    - name: Package with SAM
-      run: npm run build
-      
-    - name: Create zip from SAM artifacts
-      run: |
-        cd .aws-sam/build
-        zip -r ../../lambda-layer.zip .
-      
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: sharp-heic-lambda-layer
-        path: lambda-layer.zip
+      # Step 1: Create a release with Release Please
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: node
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created == false }}
+        with:
+          ref: 'release-please--branches--main'
+
+      - name: Package with SAM
+        if: ${{ steps.release.outputs.release_created == false }}
+        run: npm run build
+
+      - name: Create zip from SAM artifacts
+        if: ${{ steps.release.outputs.release_created == false }}
+        run: |
+          rm -rf build
+          mkdir build
+          cd .aws-sam/build
+          zip -r ../../build/lambda-layer.zip .
+          ls -la
+          pwd
+          ls
+          cd ../..
+          ls
+          pwd
+
+      # Commit and push the changes
+      - name: Commit changes
+        if: ${{ steps.release.outputs.release_created == false }}
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add build/lambda-layer.zip
+          git commit -m "chore: update version.txt for $VERSION"
+          git push
