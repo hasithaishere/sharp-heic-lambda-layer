@@ -11,6 +11,8 @@ jobs:
   create_release:
     #if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    container:
+      image: public.ecr.aws/sam/build-nodejs20.x:1
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
