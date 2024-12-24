@@ -16,9 +16,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
         
-    - name: Setup AWS SAM CLI
-      uses: aws-actions/setup-sam@v2
-        
     - name: Package with SAM
       run: npm run package
       
