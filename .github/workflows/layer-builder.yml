@@ -1,0 +1,43 @@
+name: Build and Package Lambda Layer
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: Install dependencies
+      run: npm ci
+        
+    - name: Run linting
+      run: npm run lint
+        
+    - name: Setup AWS SAM CLI
+      uses: aws-actions/setup-sam@v2
+      
+    - name: Build with SAM
+      run: npm run build
+        
+    - name: Package with SAM
+      run: npm run package
+      
+    - name: Create zip from SAM artifacts
+      run: |
+        cd .aws-sam/build
+        zip -r ../../lambda-layer.zip .
+      
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sharp-heic-lambda-layer
+        path: lambda-layer.zip
