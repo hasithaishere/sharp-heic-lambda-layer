@@ -8,6 +8,7 @@
     "lint": "npx eslint .",
     "lint:fix": "npx eslint --fix .",
     "build": "sam build",
+    "prepackage": "node deployment/createSAMConfiguration.js > samconfig.toml",
     "package": "sam package",
     "predeploy": "npm run package",
     "deploy": "sam deploy"
