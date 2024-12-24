@@ -22,21 +22,16 @@ jobs:
           release-type: node
 
       - name: Extract branch name
-        if: ${{ steps.release.outputs.pr }}
+        if: ${{ steps.release.outputs.release_created == false && steps.release.outputs.pr }}
         run: |
           PR_DATA='${{ steps.release.outputs.pr }}'
           BRANCH_NAME=$(echo $PR_DATA | jq -r '.headBranchName')
           echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
 
-      - name: Use branch name
-        if: ${{ steps.release.outputs.pr }}
-        run: |
-          echo "The branch name is: ${{ env.BRANCH_NAME }}"
-
       - uses: actions/checkout@v4
         if: ${{ steps.release.outputs.release_created == false }}
         with:
-          ref: 'release-please--branches--main'
+          ref: ${{ env.BRANCH_NAME }}
 
       - name: Package with SAM
         if: ${{ steps.release.outputs.release_created == false }}
