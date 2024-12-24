@@ -3,18 +3,29 @@ name: Build and Package Lambda Layer
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+    container:
+      image: public.ecr.aws/sam/build-nodejs20.x:1
+      
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
+    - name: Install system dependencies
+      run: |
+        yum update -y
+        yum install -y \
+          gcc-c++ \
+          make \
+          libheif-devel \
+          vips-devel \
+          pkgconfig \
+          zip
         
     - name: Install dependencies
       run: npm ci
@@ -26,7 +37,7 @@ jobs:
       uses: aws-actions/setup-sam@v2
       
     - name: Build with SAM
-      run: npm run build
+      run: sam build
         
     - name: Package with SAM
       run: npm run package
