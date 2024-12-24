@@ -24,7 +24,8 @@ jobs:
       - name: Debug Release Please outputs
         if: ${{ steps.release.outputs.pr }}
         run: |
-          echo "PR Branch: ${{ steps.release.outputs.pr_branch }}"
+          echo "PR Branch: ${{ steps.release.outputs.pr }}"
+          echo "PR Branch: ${{ steps.release.outputs.prs }}"
           echo "Release Branch: ${{ steps.release.outputs.releaseBranch }}"
           echo "All outputs: ${{ toJSON(steps.release.outputs) }}"
       - uses: actions/checkout@v4
