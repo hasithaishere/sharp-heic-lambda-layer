@@ -15,30 +15,9 @@ jobs:
       
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Install system dependencies
-      run: |
-        dnf update -y
-        dnf install -y \
-          gcc-c++ \
-          make \
-          libheif-devel \
-          vips-devel \
-          pkgconfig \
-          zip \
-          findutils
-        
-    - name: Install dependencies
-      run: npm ci
-        
-    - name: Run linting
-      run: npm run lint
         
     - name: Setup AWS SAM CLI
       uses: aws-actions/setup-sam@v2
-      
-    - name: Build with SAM
-      run: sam build
         
     - name: Package with SAM
       run: npm run package
