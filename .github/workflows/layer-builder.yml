@@ -21,13 +21,18 @@ jobs:
         with:
           release-type: node
 
-      - name: Debug Release Please outputs
+      - name: Extract branch name
         if: ${{ steps.release.outputs.pr }}
         run: |
-          echo "PR Branch: ${{ steps.release.outputs.pr }}"
-          echo "PR Branch: ${{ steps.release.outputs.prs }}"
-          echo "Release Branch: ${{ steps.release.outputs.releaseBranch }}"
-          echo "All outputs: ${{ toJSON(steps.release.outputs) }}"
+          PR_DATA='${{ steps.release.outputs.pr }}'
+          BRANCH_NAME=$(echo $PR_DATA | jq -r '.headBranchName')
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - name: Use branch name
+        if: ${{ steps.release.outputs.pr }}
+        run: |
+          echo "The branch name is: ${{ env.BRANCH_NAME }}"
+
       - uses: actions/checkout@v4
         if: ${{ steps.release.outputs.release_created == false }}
         with:
