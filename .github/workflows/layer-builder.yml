@@ -1,0 +1,68 @@
+name: Build and Package Lambda Layer
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  create_release:
+    #if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    container:
+      image: public.ecr.aws/sam/build-nodejs20.x:1
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # Step 1: Create a release with Release Please
+      - uses: googleapis/release-please-action@v4
+        id: release
+        with:
+          release-type: node
+
+      - name: Extract branch name
+        if: ${{ steps.release.outputs.release_created == false && steps.release.outputs.pr }}
+        run: |
+          PR_DATA='${{ steps.release.outputs.pr }}'
+          BRANCH_NAME=$(echo $PR_DATA | jq -r '.headBranchName')
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created == false }}
+        with:
+          ref: ${{ env.BRANCH_NAME }}
+
+      - name: Package with SAM
+        if: ${{ steps.release.outputs.release_created == false }}
+        run: npm run build
+
+      - name: Create zip from SAM artifacts
+        if: ${{ steps.release.outputs.release_created == false }}
+        id: layer_package
+        run: |
+          rm -rf build
+          mkdir build
+          cd .aws-sam/build
+          zip -r ../../build/lambda-layer.zip .
+          cd ../..
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          # Check New Layer Existis and Set to Environment Variable
+          if [ -f "build/lambda-layer.zip" ]; then
+            echo "layer_created=true" >> $GITHUB_OUTPUT
+          else
+            echo "layer_created=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Commit and push the changes
+      - name: Commit changes
+        if: ${{ steps.release.outputs.release_created == false && steps.layer_package.outputs.layer_created == 'true' }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add build/lambda-layer.zip
+          git commit -m "chore: [Auto] Update Sharp layer zip to ${{steps.layer_package.outputs.version}} version"
+          git push
