@@ -21,10 +21,12 @@ jobs:
         with:
           release-type: node
 
-      - name: Get branch name
-        if: ${{ steps.release.outputs.release_created == false }}
+      - name: Debug Release Please outputs
+        if: ${{ steps.release.outputs.pr }}
         run: |
-          echo "Branch name: ${{ steps.release.outputs.pr_branch_name }}"
+          echo "PR Branch: ${{ steps.release.outputs.pr_branch }}"
+          echo "Release Branch: ${{ steps.release.outputs.releaseBranch }}"
+          echo "All outputs: ${{ toJSON(steps.release.outputs) }}"
       - uses: actions/checkout@v4
         if: ${{ steps.release.outputs.release_created == false }}
         with:
