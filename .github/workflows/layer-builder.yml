@@ -41,25 +41,28 @@ jobs:
 
       - name: Create zip from SAM artifacts
         if: ${{ steps.release.outputs.release_created == false }}
+        id: layer_package
         run: |
           rm -rf build
           mkdir build
           cd .aws-sam/build
           zip -r ../../build/lambda-layer.zip .
-          ls -la
-          pwd
-          ls
           cd ../..
-          ls
-          pwd
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          # Check New Layer Existis and Set to Environment Variable
+          if [ -f "build/lambda-layer.zip" ]; then
+            echo "layer_created=true" >> $GITHUB_OUTPUT
+          else
+            echo "layer_created=false" >> $GITHUB_OUTPUT
+          fi
 
       # Commit and push the changes
       - name: Commit changes
-        if: ${{ steps.release.outputs.release_created == false }}
+        if: ${{ steps.release.outputs.release_created == false && steps.layer_package.outputs.layer_created == 'true' }}
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add build/lambda-layer.zip
-          git commit -m "chore: update version.txt for $VERSION"
+          git commit -m "chore: [Auto] Update Sharp layer zip to ${{steps.layer_package.outputs.version}} version"
           git push
